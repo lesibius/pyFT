@@ -1,4 +1,4 @@
-import FT_API.FTError
+import pyFT.FTError
 import http.client
 
 ##################################################################
@@ -48,7 +48,7 @@ class FTList:
             for elt in li:
                 if not elt in self.validation:
                     msg = elt + " is not an allowed " + self.key + " element. Allowed: " + ", ".join(self.validation)
-                    raise FTError.FTException(msg)
+                    raise pyFT.FTError.FTException(msg)
             self.elts = li
 
     def _build(self):
@@ -164,7 +164,7 @@ class FTResultContext:
             self.generics = []
         self.generics.append(FTAtom(key,val,isNumeric))
 
-    def addAspect(self,asp):
+    def addAspects(self,asp):
         if self.aspects is None:
             self.aspects = FTAspect()
         self.aspects.addElts(asp)
@@ -265,10 +265,10 @@ class FTRequest:
             self.queryElements[2] = FTResultContext()
         self.queryElements[2].addGeneric(key,val,isNumeric)
 
-    def addAspect(self,asp):
+    def addAspects(self,asp):
         if self.queryElements[2] is None:
             self.queryElements[2] = FTResultContext()
-        self.queryElements[2].addAspect(asp)
+        self.queryElements[2].addAspects(asp)
         
     def getResults(self):
         conn = http.client.HTTPSConnection(self.domain)

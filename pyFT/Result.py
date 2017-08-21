@@ -1,5 +1,5 @@
 import json
-import FT_API.FTError
+import pyFT.FTError as FTError
 
 aspectsAction = {
     'title': lambda res: res['title']['title'],
