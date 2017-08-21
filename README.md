@@ -76,7 +76,7 @@ As this wrapper is a WIP, some are not available yet. You may however use them t
 request.addGenericResultContext('maxResults',10,isNumeric=True) #Some generic (i.e. not built-in of the wrapper) result context
 ```
 
-Now, our request is almost done. You can have a look at hit with the _build method of the FTRequest instance.
+Now, our request is almost done. You can have a look at it with the _build method of the FTRequest instance.
 ```python
 #Note that if you are working in the Python interpreter and you want to make sure that your request is correct before sending it, you can print it with the _build method:
 print(request._build())
