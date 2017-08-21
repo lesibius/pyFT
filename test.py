@@ -18,6 +18,7 @@ query = (pyFT.FTBasic("banks") - pyFT.FTBasic("equity")) + pyFT.FTBasic("finance
 print(query.evaluate())
 #PRINT: ((banks AND (NOT equity)) OR (finance AND credit))
 
+#You can then add it to your FTRequest:
 request.builtQuery(query)
 
 #To look for particular media, you can use the addCurations method:
