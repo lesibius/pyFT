@@ -55,8 +55,25 @@ class FTList:
         _ = ["\"" + e + "\"" for e in self.elts]
         _ = ",".join(_)
         return "\""+self.key+"\":"+"["+_+"]"
-   
-    
+
+class FTDict:
+    def __init__(self,name,dic):
+        self.name = name
+        self.BEGIN = "{"
+        self.END = "}"
+        self.dic = dic
+
+    def __getitem__(self,key):
+        return self.dic[key]
+
+    def __setitem__(self,key,val):
+        self.dic[key] = val
+
+    def _build(self):
+        _ = "\"" + self.name + "\":" + self.BEGIN
+        _ += ",".join(e._build() for k,e in self.dic.items() if not e is None)
+        _ += self.END
+        return _
 
 ##################################################################
 #                         queryString
@@ -109,8 +126,10 @@ class FTQueryContext:
         """
         """
         self.basis = "\"queryContext\":{"
+        self.contextElts = None
         self.curations = None
         self.generics = None
+        self.buildable = [self.curations]
 
     def addCuration(self,cur):
         if self.curations is None:
@@ -123,11 +142,10 @@ class FTQueryContext:
         self.generics.append(FTAtom(key,val,isNumeric))
 
     def _build(self):
-        buildable = [self.curations]
         if not self.generics is None:
-            buildable += self.generics
+            self.buildable += self.generics
         _ = self.basis
-        _ += ",".join([e._build() for e in buildable if not e is None])
+        _ += ",".join([e._build() for e in self.buildable if not e is None])
         _ += "}"
         return _
 
@@ -152,6 +170,7 @@ class FTResultContext:
         self.generics = None
         self.sortQuery = None
         self.aspects = None
+        self.buildable = [self.sortQuery,self.aspects]
 
     def addSortQuery(self,field,DESC=True):
         """
@@ -170,11 +189,10 @@ class FTResultContext:
         self.aspects.addElts(asp)
 
     def _build(self):
-        buildable = [self.sortQuery,self.aspects]
         if not self.generics is None:
-            buildable += self.generics
+            self.buildable += self.generics
         _ = self.basis
-        _ += ",".join([e._build() for e in buildable if not e is None])
+        _ += ",".join([e._build() for e in self.buildable if not e is None])
         _ += "}"
         return _
 
@@ -227,8 +245,21 @@ class FTRequest:
         self.domain = 'api.ft.com'
         self.apiKey = apiKey
         self.header = {"Content-Type": "application/json"}
-        self.queryElements = [None,None,None] #queryString, queryContext, resultContext
+        self.queryElements = {
+            'queryString':None,
+            'queryContext':None,
+            'resultContext':None
+            }#queryString, queryContext, resultContext
 
+
+    def _addQueryContext(self):
+        if self.queryElements['queryContext'] is None:
+            self.queryElements['queryContext'] = FTQueryContext()
+
+    def _addResultContext(self):
+        if self.queryElements['resultContext'] is None:
+            self.queryElements['resultContext'] = FTResultContext()
+        
     def customQuery(self,query):
         """
         Creates a custom query
@@ -241,34 +272,30 @@ class FTRequest:
         ------
         None
         """
-        if self.queryElements[0] is None:
-            self.queryElements[0] = FTQueryString()
-        self.queryElements[0].setCustomQuery(query)
+        if self.queryElements['queryString'] is None:
+            self.queryElements['queryString'] = FTQueryString()
+        self.queryElements['queryString'].setCustomQuery(query)
 
     def builtQuery(self,query):
-        if self.queryElements[0] is None:
-            self.queryElements[0] = FTQueryString()
-        self.queryElements[0].setBuiltQuery(query)
+        if self.queryElements['queryString'] is None:
+            self.queryElements['queryString'] = FTQueryString()
+        self.queryElements['queryString'].setBuiltQuery(query)
 
     def addSortQuery(self,field,DESC=True):
-        if self.queryElements[2] is None:
-            self.queryElements[2] = FTResultContext()
-        self.queryElements[2].addSortQuery(field,DESC)
+        self._addResultContext()
+        self.queryElements['resultContext'].addSortQuery(field,DESC)
 
     def addCurations(self,cur):
-        if self.queryElements[1] is None:
-            self.queryElements[1] = FTQueryContext()
-        self.queryElements[1].addCuration(cur)
+        self._addQueryContext()
+        self.queryElements['queryContext'].addCuration(cur)
 
     def addGenericResultContext(self,key,val,isNumeric=False):
-        if self.queryElements[2] is None:
-            self.queryElements[2] = FTResultContext()
-        self.queryElements[2].addGeneric(key,val,isNumeric)
+        self._addResultContext()
+        self.queryElements['resultContext'].addGeneric(key,val,isNumeric)
 
     def addAspects(self,asp):
-        if self.queryElements[2] is None:
-            self.queryElements[2] = FTResultContext()
-        self.queryElements[2].addAspects(asp)
+        self._addResultContext()
+        self.queryElements['resultContext'].addAspects(asp)
         
     def getResults(self):
         conn = http.client.HTTPSConnection(self.domain)
@@ -282,8 +309,13 @@ class FTRequest:
     def _build(self):
         """
         """
+        if self.queryElements['queryString'] is None:
+            raise pyFT.FTError.FTException('A queryString must be provided')
         _ = "{"
-        elt = [e._build() for e in self.queryElements if not e is None]
+        elt = [e._build() for k,e in self.queryElements.items() if not e is None]
+        if elt == [None]:
+            raise pyFT.FTError.FTException("Empty query")
         _ += ",".join(elt)
         _ += "}"
         return _
+
