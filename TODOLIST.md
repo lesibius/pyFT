@@ -4,6 +4,7 @@
 - [ ] Add FTFacet in FTHelper
 - [ ] Use FTFacet to generate a double request with some parametrization
 - [ ] Manage dates
+- [ ] Create new error types to match HTML errors
 
 # FTRequest Specific Development
 - [ ] Add publishedBefore method
